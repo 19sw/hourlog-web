@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HourLog</title>
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HourLog">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 id="appTitle"></h1>
+    <button id="helpBtn" class="icon-btn" type="button" aria-label="Help">?</button>
+  </header>
+  <div id="warn" class="banner warn" role="alert" hidden></div>
+
+  <main>
+    <section id="viewLog" class="view" aria-labelledby="tabLog">
+      <h2 id="promptTitle" class="prompt"></h2>
+      <textarea id="quickText" rows="5" autocomplete="off"></textarea>
+      <div id="speechMsg" class="banner info" role="status" hidden></div>
+      <div class="row">
+        <button id="micBtn" class="btn secondary mic" type="button">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2Z"/></svg>
+          <span id="micLabel"></span>
+        </button>
+        <button id="saveBtn" class="btn primary" type="button"></button>
+      </div>
+      <p id="savedMsg" class="saved" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="viewTimeline" class="view" hidden>
+      <div class="daybar">
+        <button id="prevDay" class="icon-btn" type="button">‹</button>
+        <label class="datepick">
+          <span id="dateLabel" class="visually-hidden"></span>
+          <input id="datePicker" type="date">
+        </label>
+        <button id="nextDay" class="icon-btn" type="button">›</button>
+      </div>
+      <ol id="hours" class="hours"></ol>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button id="tabLog" class="tab" role="tab" type="button" aria-selected="true"></button>
+    <button id="tabTimeline" class="tab" role="tab" type="button" aria-selected="false"></button>
+  </nav>
+</div>
+
+<dialog id="editor">
+  <form method="dialog" id="editForm">
+    <h2 id="editTitle"></h2>
+    <label class="field"><span id="editEntryLabel"></span>
+      <textarea id="editText" rows="4"></textarea></label>
+    <label class="field"><span id="editTimeLabel"></span>
+      <input id="editTime" type="datetime-local" required></label>
+    <div id="editMsg" class="banner warn" role="alert" hidden></div>
+    <div class="row">
+      <button id="editCancel" class="btn secondary" type="button"></button>
+      <button id="editSave" class="btn primary" type="submit"></button>
+    </div>
+    <button id="editDelete" class="btn danger" type="button"></button>
+  </form>
+</dialog>
+
+<dialog id="confirm">
+  <h2 id="confirmTitle"></h2>
+  <p id="confirmBody"></p>
+  <div class="row">
+    <button id="confirmCancel" class="btn secondary" type="button"></button>
+    <button id="confirmOk" class="btn danger solid" type="button"></button>
+  </div>
+</dialog>
+
+<dialog id="tip">
+  <h2 id="tipTitle"></h2>
+  <p id="tipBody"></p>
+  <p id="tipPrivacy" class="muted"></p>
+  <div class="row"><button id="tipOk" class="btn primary" type="button"></button></div>
+</dialog>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
