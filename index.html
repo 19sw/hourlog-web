@@ -17,9 +17,26 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="bn-head" viewBox="0 0 100 100">
+    <g class="bn-all" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path class="bn-fur" d="M31 50 C22 30 24 8 34 7 C45 6 48 28 46 46Z" stroke-width="2.6"/>
+      <path class="bn-inner" d="M33 42 C29 28 30 16 34 15 C39 16 40 30 40 42Z" stroke-width="0"/>
+      <path class="bn-fur" d="M69 50 C78 30 76 8 66 7 C55 6 52 28 54 46Z" stroke-width="2.6"/>
+      <path class="bn-inner" d="M67 42 C71 28 70 16 66 15 C61 16 60 30 60 42Z" stroke-width="0"/>
+      <path class="bn-fur" d="M13 68 C12 48 30 40 50 40 C70 40 88 48 87 68 C86 86 68 94 50 94 C32 94 14 86 13 68Z" stroke-width="2.8"/>
+      <ellipse class="bn-blush" cx="26" cy="77" rx="8" ry="5" stroke="none"/>
+      <ellipse class="bn-blush" cx="74" cy="77" rx="8" ry="5" stroke="none"/>
+      <g stroke="none"><ellipse class="bn-ink" cx="35" cy="68" rx="3.6" ry="4.4"/><circle class="bn-spark" cx="34" cy="66.5" r="1.2"/>
+      <ellipse class="bn-ink" cx="65" cy="68" rx="3.6" ry="4.4"/><circle class="bn-spark" cx="64" cy="66.5" r="1.2"/></g>
+      <path class="bn-nose" d="M47 75 C49 73.5 51 73.5 53 75 C52 77.5 48 77.5 47 75Z" stroke-width="1.4"/>
+      <path d="M50 77 C50 82 44 83 41.500 80 M50 77 C50 82 56 83 58.500 80" stroke-width="1.8"/>
+    </g>
+  </symbol>
+</svg>
 <div id="app">
   <header class="topbar">
-    <h1 id="appTitle"></h1>
+    <div class="brand"><svg class="bn-avatar" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#bn-head"/></svg><h1 id="appTitle"></h1></div>
     <button id="helpBtn" class="icon-btn" type="button" aria-label="Help">?</button>
   </header>
   <div id="warn" class="banner warn" role="alert" hidden></div>
@@ -37,9 +54,60 @@
         <button id="saveBtn" class="btn primary" type="button"></button>
       </div>
       <p id="savedMsg" class="saved" role="status" aria-live="polite"></p>
+      <div id="mascot" class="mascot" aria-hidden="true">
+        <div id="mascotBubble" class="bubble"></div>
+        <svg class="bunny" viewBox="0 0 320 210" aria-hidden="true" focusable="false">
+          <g class="bn-all" stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <!-- cushion -->
+            <path class="bn-cushion" d="M22 150 C14 124 44 112 96 111 L232 111 C292 112 312 132 302 158 C292 188 244 194 160 194 C84 194 32 188 22 150Z" stroke-width="2.6"/>
+            <path class="bn-seam" d="M52 160 C90 172 140 176 190 175 C230 174 262 168 284 152" stroke-width="1.8" opacity=".7"/>
+            <path class="bn-seam" d="M40 140 C36 134 40 128 48 126 M290 134 C298 138 296 146 290 150" stroke-width="1.8" opacity=".7"/>
+            <!-- body + tail -->
+            <g class="bn-body">
+              <circle class="bn-fur" cx="274" cy="124" r="15" stroke-width="2.4"/>
+              <path class="bn-tuft" d="M268 120 C272 116 278 116 281 120" stroke-width="1.6" opacity=".6"/>
+              <path class="bn-fur" d="M118 146 C108 104 140 74 192 72 C246 70 276 96 272 128 C270 150 242 156 204 156 L140 156 Z" stroke-width="2.6"/>
+              <path class="bn-tuft" d="M216 100 C230 96 244 100 252 110" stroke-width="1.6" opacity=".55"/>
+            </g>
+            <!-- head group -->
+            <g class="bn-head">
+              <g class="bn-ear bn-ear-l">
+                <path class="bn-fur" d="M92 78 C66 52 34 30 20 44 C8 58 36 90 84 100Z" stroke-width="2.6"/>
+                <path class="bn-inner" d="M84 82 C66 64 44 50 34 52 C30 62 50 80 78 90Z" stroke-width="0"/>
+              </g>
+              <g class="bn-ear bn-ear-r">
+                <path class="bn-fur" d="M128 68 C134 36 160 8 182 12 C200 18 184 56 160 82Z" stroke-width="2.6"/>
+                <path class="bn-inner" d="M138 66 C144 44 160 26 172 26 C176 36 166 56 152 72Z" stroke-width="0"/>
+              </g>
+              <path class="bn-fur" d="M64 110 C62 76 92 64 122 64 C154 64 180 78 178 108 C176 138 150 150 120 150 C90 150 66 138 64 110Z" stroke-width="2.8"/>
+              <!-- cheeks -->
+              <ellipse class="bn-blush" cx="86" cy="124" rx="11" ry="7" stroke="none"/>
+              <ellipse class="bn-blush" cx="156" cy="124" rx="11" ry="7" stroke="none"/>
+              <!-- open eyes -->
+              <g class="bn-eyes-open" stroke="none">
+                <g class="bn-eye"><ellipse class="bn-ink" cx="98" cy="108" rx="4.6" ry="5.4"/><circle class="bn-spark" cx="96.6" cy="106" r="1.5"/></g>
+                <g class="bn-eye"><ellipse class="bn-ink" cx="144" cy="108" rx="4.6" ry="5.4"/><circle class="bn-spark" cx="142.6" cy="106" r="1.5"/></g>
+              </g>
+              <!-- happy eyes -->
+              <g class="bn-eyes-happy" stroke-width="3">
+                <path d="M91 110 C94 102 102 102 105 110"/>
+                <path d="M137 110 C140 102 148 102 151 110"/>
+              </g>
+              <!-- nose/mouth -->
+              <path class="bn-nose" d="M118 117 C120 115 124 115 126 117 C125 120 119 120 118 117Z" stroke-width="1.6"/>
+              <path class="bn-mouth-calm" d="M122 120 C122 126 115 127 112 123 M122 120 C122 126 129 127 132 123" stroke-width="2"/>
+              <path class="bn-mouth-happy" d="M110 121 C117 126 127 126 134 121 C132 135 112 135 110 121Z" stroke-width="2"/>
+              <!-- front paws -->
+              <path class="bn-fur" d="M86 150 C84 140 100 138 106 144 C112 152 104 160 94 160 C88 160 86 154 86 150Z" stroke-width="2.4"/>
+              <path class="bn-fur" d="M134 146 C136 138 152 138 156 146 C158 154 150 160 142 160 C136 160 133 152 134 146Z" stroke-width="2.4"/>
+            </g>
+          </g>
+        </svg>
+      </div>
     </section>
 
     <section id="viewTimeline" class="view" hidden>
+      <div class="dayhead">
       <div class="daybar">
         <button id="prevDay" class="icon-btn" type="button">‹</button>
         <label class="datepick">
@@ -47,6 +115,11 @@
           <input id="datePicker" type="date">
         </label>
         <button id="nextDay" class="icon-btn" type="button">›</button>
+      </div>
+      <div id="dayEmpty" class="day-empty" hidden aria-hidden="true">
+        <svg class="bn-avatar" viewBox="0 0 100 100" focusable="false"><use href="#bn-head"/></svg>
+        <span id="dayEmptyText" class="bubble"></span>
+      </div>
       </div>
       <ol id="hours" class="hours"></ol>
     </section>

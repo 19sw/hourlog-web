@@ -35,6 +35,7 @@ function applyStrings() {
   $('appTitle').textContent = t('appName');
   $('helpBtn').setAttribute('aria-label', t('help'));
   $('promptTitle').textContent = t('prompt');
+  $('mascotBubble').textContent = t('mascotAsk');
   $('quickText').placeholder = t('placeholder');
   $('quickText').setAttribute('aria-label', t('prompt'));
   $('saveBtn').textContent = t('save');
@@ -127,7 +128,23 @@ $('saveBtn').onclick = () => {
   updateWarn();
   if (!saved && store.persistent === false) { /* warning banner already shown */ }
   renderTimeline();
+  if (saved) celebrate();
 };
+
+// ---------- mascot ----------
+let celebrateTimer = null;
+function celebrate() {
+  const m = $('mascot');
+  clearTimeout(celebrateTimer);
+  m.classList.remove('hop');
+  void m.offsetWidth; // restart the hop animation on rapid saves
+  m.classList.add('happy', 'hop');
+  $('mascotBubble').textContent = t('mascotSaved');
+  celebrateTimer = setTimeout(() => {
+    m.classList.remove('happy', 'hop');
+    $('mascotBubble').textContent = t('mascotAsk');
+  }, 2000);
+}
 
 // ---------- timeline ----------
 function renderTimeline() {
@@ -135,6 +152,9 @@ function renderTimeline() {
   const now = new Date();
   const isToday = isSameDay(currentDay, now);
   const slots = slotsForDay(currentDay, store.list());
+  const dayEmpty = !slots.some((s) => !s.isEmpty);
+  $('dayEmpty').hidden = !dayEmpty;
+  $('dayEmptyText').textContent = t(isToday ? 'dayEmptyToday' : 'dayEmptyOther');
   const ol = $('hours');
   ol.textContent = '';
   let slipN = 0;
