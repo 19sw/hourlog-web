@@ -137,6 +137,7 @@ function renderTimeline() {
   const slots = slotsForDay(currentDay, store.list());
   const ol = $('hours');
   ol.textContent = '';
+  let slipN = 0;
   for (const s of slots) {
     const li = document.createElement('li');
     li.className = 'hour' + (isToday && s.hour === now.getHours() ? ' current' : '');
@@ -157,7 +158,8 @@ function renderTimeline() {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'item';
         const time = document.createElement('span');
-        time.className = 'time';
+        time.className = 'time slip slip-' + (slipN % 2 ? 'blue' : 'pink') + ' tilt-' + (slipN % 4);
+        slipN++;
         time.textContent = hmFmt.format(new Date(e.timestamp));
         b.append(time, document.createTextNode(e.text));
         b.onclick = () => openEditor(e, null);
