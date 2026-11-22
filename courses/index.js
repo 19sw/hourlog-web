@@ -1,43 +1,50 @@
 // Course pack registry. Add a pack by dropping `<id>.js` next to this file and
-// listing it below. Each file is imported on its own, so one broken or invalid
-// pack is skipped (console warning) without affecting the others or the app.
+// listing it below (keep the `?v=` release suffix: see tools/asset-version.mjs).
+// Each file is imported on its own, so one broken or invalid pack is skipped
+// (console warning) without affecting the others or the app.
 
-import { validatePack } from '../js/learn-logic.js';
+import { validatePack, resolvePack } from '../js/learn-logic.js?v=20261122d';
 
 export const PACK_FILES = [
-  './video-editing-basics.js',
+  './video-editing-basics.js?v=20261122d',
+  './micro-econ-final.js?v=20261122d',
+  './short-video-editor.js?v=20261122d',
 ];
 
 const defaultImporter = (f) => import(f); // resolved relative to this module
 
 /**
- * Load, validate and de-duplicate packs.
+ * Load, resolve shared-node references, validate and de-duplicate packs.
+ * Packs without references are validated first; a referencing pack may only
+ * point at a pack that loaded and validated, otherwise it is rejected as
+ * dangling.
  * @returns {Promise<{packs: object[], rejected: {file:string, errors:string[]}[]}>}
  */
 export async function loadPacks(files = PACK_FILES, importer = defaultImporter, warn = (...a) => console.warn(...a)) {
-  const packs = [];
-  const rejected = [];
   const settled = await Promise.allSettled(files.map((f) => importer(f)));
+  const loaded = [];
+  const rejected = [];
+  const reject = (file, errors, msg) => { rejected.push({ file, errors }); warn(`[learn] course pack ${file} ${msg}:`, errors); };
   settled.forEach((r, i) => {
-    const file = files[i];
-    if (r.status === 'rejected') {
-      rejected.push({ file, errors: [String(r.reason && r.reason.message || r.reason)] });
-      warn(`[learn] course pack ${file} failed to load:`, r.reason);
-      return;
-    }
-    const pack = r.value && 'default' in r.value ? r.value.default : r.value;
-    const { ok, errors } = validatePack(pack);
-    if (!ok) {
-      rejected.push({ file, errors });
-      warn(`[learn] course pack ${file} is invalid and was hidden:`, errors);
-      return;
-    }
-    if (packs.some((p) => p.id === pack.id)) {
-      rejected.push({ file, errors: [`duplicate pack id ${pack.id}`] });
-      warn(`[learn] course pack ${file} duplicates id ${pack.id} and was hidden`);
-      return;
-    }
-    packs.push(pack);
+    if (r.status === 'rejected') { reject(files[i], [String((r.reason && r.reason.message) || r.reason)], 'failed to load'); return; }
+    loaded.push({ file: files[i], pack: r.value && 'default' in r.value ? r.value.default : r.value });
   });
+  const hasRefs = (p) => p && Array.isArray(p.nodes) && p.nodes.some((n) => n && 'ref' in n);
+  const ok = new Map();
+  const accept = ({ file, pack }) => {
+    const { ok: valid, errors } = validatePack(pack);
+    if (!valid) { reject(file, errors, 'is invalid and was hidden'); return; }
+    if (ok.has(pack.id)) { reject(file, [`duplicate pack id ${pack.id}`], 'duplicates another pack id and was hidden'); return; }
+    ok.set(pack.id, { file, pack });
+  };
+  for (const item of loaded.filter((x) => !hasRefs(x.pack))) accept(item);
+  for (const item of loaded.filter((x) => hasRefs(x.pack))) {
+    const sources = new Map([...ok.values()].map((x) => [x.pack.id, x.pack]));
+    const r = resolvePack(item.pack, sources);
+    if (r.errors.length) { reject(item.file, r.errors, 'has dangling shared-node references and was hidden'); continue; }
+    accept({ file: item.file, pack: r.pack });
+  }
+  // keep registry order
+  const packs = loaded.filter((x) => x.pack && ok.has(x.pack.id) && ok.get(x.pack.id).file === x.file).map((x) => ok.get(x.pack.id).pack);
   return { packs, rejected };
 }

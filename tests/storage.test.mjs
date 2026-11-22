@@ -78,3 +78,29 @@ test('refresh never replaces memory while degraded', () => {
   s.refresh();
   assert.deepEqual(s.list().map((e) => e.text), ['saved', 'memory only']);
 });
+
+test('N3: after a write failure the store stays in memory, so a later working write cannot clobber other tabs', () => {
+  let fail = false;
+  const m = new Map();
+  const b = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (fail) throw new Error('quota'); m.set(k, v); } };
+  const a = createStore(b); a.load();
+  a.add({ text: 'a1', timestamp: 1 });
+  fail = true;
+  a.add({ text: 'a2 (memory only)', timestamp: 2 });
+  fail = false;
+  const other = createStore(b); other.load();
+  other.add({ text: 'from another tab', timestamp: 3 });
+  const r = a.add({ text: 'a3', timestamp: 4 });  // storage works again
+  assert.equal(r.saved, false);
+  assert.equal(a.persistent, false);
+  const fresh = createStore(b); fresh.load();
+  assert.deepEqual(fresh.list().map((e) => e.text), ['a1', 'from another tab']);
+  assert.deepEqual(a.list().map((e) => e.text), ['a1', 'a2 (memory only)', 'a3']);
+});
+
+test('corrupt entries are backed up, then replaced on the next write', () => {
+  const b = mem(); b.setItem('hourlog.entries.v1', '{oops');
+  const s = createStore(b); s.load();
+  assert.equal(b.getItem('hourlog.entries.v1.corrupt'), '{oops');
+  assert.equal(s.add({ text: 'x', timestamp: 1 }).saved, true);
+});

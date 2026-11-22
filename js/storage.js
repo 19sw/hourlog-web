@@ -1,9 +1,13 @@
 // Entry store with an injectable key/value backend (localStorage-compatible:
 // getItem/setItem). All operations are synchronous. If the backend is
 // unavailable or a write throws (private mode, quota), the store keeps working
-// in memory and `persistent` becomes false so the UI can warn.
+// in memory and `persistent` becomes false so the UI can warn. Degraded is
+// sticky for the session: no later write may push a stale in-memory copy over
+// what other tabs saved meanwhile. A corrupt payload is backed up, then
+// replaced on the next write.
 
 const KEY = 'hourlog.entries.v1';
+const BACKUP_KEY = 'hourlog.entries.v1.corrupt';
 
 const valid = (e) => e && typeof e.id === 'string' && typeof e.text === 'string' && Number.isFinite(e.timestamp);
 
@@ -15,7 +19,11 @@ export function createStore(backend) {
     try {
       if (!backend) throw new Error('no backend');
       const raw = backend.getItem(KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
+      let parsed;
+      try { parsed = raw ? JSON.parse(raw) : []; } catch {
+        parsed = [];
+        try { backend.setItem(BACKUP_KEY, raw); } catch { /* ignore */ }
+      }
       entries = Array.isArray(parsed)
         ? parsed.filter(valid)
         : [];
@@ -39,10 +47,10 @@ export function createStore(backend) {
   }
 
   function flush() {
+    if (!persistent) return false; // degraded: stay in memory until reload
     try {
       if (!backend) throw new Error('no backend');
       backend.setItem(KEY, JSON.stringify(entries));
-      persistent = true; // recovered
       return true;
     } catch {
       persistent = false;

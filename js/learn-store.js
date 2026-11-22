@@ -3,14 +3,22 @@
 // write throws, everything keeps working in memory and `persistent` is false.
 //
 // Stored payload (key `hourlog.learning`):
-//   { v: 1, courses: { [packId]: CourseState } }   (CourseState: see learn-logic.js)
-// Future versions bump `v` and add a step to `migrate`.
+//   { v: 2, courses: { [packId]: CourseState } }   (CourseState: see learn-logic.js)
+// Every new CourseState field needs a version bump plus a step in `migrate`,
+// otherwise an older build's normalizer would silently strip it.
+//   v1 (Release A): topic progress.
+//   v2 (Release B): adds setup.examDate, assessment.selfRatings, notebook,
+//                   mock, plan. v1 -> v2 keeps everything and adds defaults.
+//
+// Once a read or write fails, the store stays in memory for the rest of the
+// session (never writes again until reload), so a stale in-memory copy can't
+// later overwrite what other tabs saved meanwhile.
 
-import { normalizeCourseState } from './learn-logic.js';
+import { normalizeCourseState } from './learn-logic.js?v=20261122d';
 
 export const LEARN_KEY = 'hourlog.learning';
 export const LEARN_BACKUP_KEY = 'hourlog.learning.corrupt';
-export const LEARN_VERSION = 1;
+export const LEARN_VERSION = 2;
 
 /**
  * Bring a parsed payload up to LEARN_VERSION. Returns { data, readOnly }.
@@ -20,9 +28,12 @@ export const LEARN_VERSION = 1;
 export function migrate(parsed) {
   if (!parsed || typeof parsed !== 'object' || !Number.isInteger(parsed.v)) return { data: null, readOnly: false };
   if (parsed.v > LEARN_VERSION) return { data: parsed, readOnly: true };
-  // v1 is current. Future: if (parsed.v === 1) parsed = v1ToV2(parsed); ...
+  // v1 -> v2: CourseState gained optional fields; normalizeCourseState fills
+  // their defaults and keeps every v1 field. Future steps chain here.
   const courses = {};
   const src = parsed.courses && typeof parsed.courses === 'object' ? parsed.courses : {};
+  // Answer indexes are never rewritten: saved answers are positional, so the
+  // published packs keep their assessment option order (see tests/migration.test.mjs).
   for (const [id, cs] of Object.entries(src)) courses[id] = normalizeCourseState(cs);
   return { data: { v: LEARN_VERSION, courses }, readOnly: false };
 }
@@ -74,7 +85,7 @@ export function createLearnStore(backend) {
   }
 
   function flush() {
-    if (readOnly) { persistent = false; return false; }
+    if (readOnly || !persistent) { persistent = false; return false; } // degraded: stay in memory until reload
     try {
       if (!backend) throw new Error('no backend');
       backend.setItem(LEARN_KEY, JSON.stringify(data));

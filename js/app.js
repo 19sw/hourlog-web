@@ -1,10 +1,10 @@
 import { slotsForDay, presetDate, normalizeText, startOfDay, addDays, isSameDay,
-  toDateInputValue, toDateTimeInputValue, parseDateInput, parseDateTimeInput } from './logic.js';
-import { createStore } from './storage.js';
-import { pickLocale, speechLang, t as tr } from './i18n.js';
-import { speechSupported, startSpeech } from './speech.js';
-import { createLearnStore } from './learn-store.js';
-import { initLearn } from './learn.js';
+  toDateInputValue, toDateTimeInputValue, parseDateInput, parseDateTimeInput } from './logic.js?v=20261122d';
+import { createStore } from './storage.js?v=20261122d';
+import { pickLocale, speechLang, t as tr } from './i18n.js?v=20261122d';
+import { speechSupported, startSpeech } from './speech.js?v=20261122d';
+import { createLearnStore } from './learn-store.js?v=20261122d';
+import { initLearn } from './learn.js?v=20261122d';
 
 const $ = (id) => document.getElementById(id);
 const locale = pickLocale(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]);
@@ -241,8 +241,19 @@ $('editForm').addEventListener('submit', (ev) => {
   if (!text) { editMsg('errEmpty'); $('editText').focus(); return; }
   if (ts === null) { editMsg('errTime'); $('editTime').focus(); return; }
   editMsg(null);
-  if (editingId) store.update(editingId, { text, timestamp: ts });
-  else store.add({ text, timestamp: ts });
+  if (editingId) {
+    const r = store.update(editingId, { text, timestamp: ts });
+    if (!r.entry) {
+      // N1: deleted in another window meanwhile. Keep the dialog open with the
+      // text; the next Save stores it as a new entry instead of losing it.
+      editingId = null;
+      $('editTitle').textContent = t('newEntry');
+      $('editDelete').hidden = true;
+      editMsg('editGone');
+      renderTimeline();
+      return;
+    }
+  } else store.add({ text, timestamp: ts });
   updateWarn();
   $('editor').close();
   // Follow the entry to its day if the time was moved to another day.

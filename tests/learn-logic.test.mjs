@@ -339,8 +339,8 @@ test('weekly target is clamped to 1..7', () => {
 
 test('normalizeCourseState repairs junk without throwing', () => {
   const s = normalizeCourseState({ setup: { goalLevel: 'x', weeklyTarget: 99 }, assessment: { answers: { a: -1, b: 2 }, completedAt: 'no' }, nodes: { a: null, b: { masteredAt: 5, failedAttempts: -3, checks: 'x' } }, completions: [null, { nodeId: 'b', at: 5 }] });
-  assert.deepEqual(s.setup, { goalLevel: 2, weeklyTarget: 3 });
-  assert.deepEqual(s.assessment, { answers: { b: 2 }, completedAt: null });
+  assert.deepEqual(s.setup, { goalLevel: 2, weeklyTarget: 3, examDate: null });
+  assert.deepEqual(s.assessment, { answers: { b: 2 }, completedAt: null, selfRatings: {}, seed: null });
   assert.equal(s.nodes.a, undefined);
   assert.equal(s.nodes.b.masteredBy, 'quiz');
   assert.equal(s.nodes.b.failedAttempts, 0);
@@ -380,4 +380,19 @@ test('shuffleOrder: a non-identity permutation; grading uses original indexes, n
   assert.equal(gradeQuiz(quiz, answers).passed, true);
   const slot0 = quiz.map((q, i) => orders[i][0]);      // always tapping the first slot
   assert.equal(gradeQuiz(quiz, slot0).passed, slot0.every((a, i) => a === quiz[i].answer));
+});
+
+test('assessment display order: seeded per attempt, stable, new on retake; answers stay authored indexes', async () => {
+  const { seededOptionOrder } = await import('../js/learn-exam.js');
+  let s = applySetup(emptyCourseState(), { goalLevel: 2, weeklyTarget: 3, seed: 1234 });
+  assert.equal(s.assessment.seed, 1234);
+  assert.equal(applySetup(s, { goalLevel: 3, weeklyTarget: 3, seed: 999 }).assessment.seed, 1234, 'changing the goal keeps the attempt order');
+  const qs = ['qa1', 'qa2', 'qb1', 'qd1', 'x5', 'x6'];
+  const o1 = qs.map((id) => seededOptionOrder(s.assessment.seed, id, 4).join(''));
+  assert.deepEqual(qs.map((id) => seededOptionOrder(1234, id, 4).join('')), o1);
+  const r = resetAssessment(s, 98765);
+  assert.equal(r.assessment.seed, 98765);
+  assert.notDeepEqual(qs.map((id) => seededOptionOrder(r.assessment.seed, id, 4).join('')), o1);
+  s = answerAssessment(s, 'qa1', 2);
+  assert.equal(s.assessment.answers.qa1, 2, 'stored by authored index regardless of display');
 });

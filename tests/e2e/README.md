@@ -29,3 +29,11 @@ It also covers:
 - a frozen second tab writing over newer progress and entries (F1);
 - reset with confirmation;
 - that no external requests are made and the console has no errors.
+
+Release B adds checks for:
+- a Release A (v1) user upgrading;
+- the type chooser;
+- the exam journey: date validation, countdown, diagnostic, plan (weakest first, mock on the last day), the behind state and re-plan, a chapter quiz that does not reveal answers, the notebook (redo wrong, then right), and the mock exam (reload mid-exam, visible countdown, auto-submit after time runs out, per-chapter result and revisit list, one timeline entry per hand-in);
+- the role journey: self-rating, gap cap, gap-ordered path, map → task → ability → lesson, a shared lesson with separate progress, required-vs-current;
+- 360 and 375 px widths and tap targets on the new views.
+

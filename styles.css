@@ -383,3 +383,100 @@ dialog h2 { margin: 0 0 .75rem; font-size: 1.35rem; }
 .ln-rate-btn.on::before { content: "✓ "; }
 .ln-quiz .ln-q { margin-top: 1rem; }
 .tab { padding: 0 .25rem; }
+
+/* ---------- Learn, Release B: types, exam (plan, notebook, mock), role (map, abilities) ---------- */
+.ln-group-title { font-size: 1.25rem; margin: 1.25rem 0 .25rem; }
+.ln-demo { background: var(--warnbg); color: var(--warntext); border-radius: .4rem; padding: .5rem .7rem; font-size: .9rem; line-height: 1.5; margin: .25rem 0 .75rem; }
+.ln-demo-short { margin-top: .5rem; }
+.ln-own { margin: .75rem 0 1rem; line-height: 1.55; }
+.ln-types { list-style: none; margin: .25rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.ln-type {
+  width: 100%; text-align: start; display: flex; flex-direction: column; gap: .2rem; padding: .8rem .9rem; min-height: 3.25rem;
+  font: inherit; color: var(--text); cursor: pointer; border: 1px solid var(--line); border-left: .35rem solid var(--blue-strong); border-radius: .4rem;
+  background-color: var(--card); background-image: var(--grain); background-blend-mode: var(--grain-blend); box-shadow: 0 1px 2px var(--shadow);
+}
+.ln-types li:nth-child(2) .ln-type { border-left-color: var(--pink-strong); }
+.ln-types li:nth-child(3) .ln-type { border-left-color: var(--accent); }
+.ln-type:focus-visible, .ln-task-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ln-type-title { font-family: var(--hand); font-size: 1.3rem; font-weight: 700; }
+.ln-type-desc { line-height: 1.5; }
+.ln-type-count { color: var(--muted); font-size: .85rem; font-weight: 600; }
+.ln-error { color: var(--danger); font-weight: 600; margin: .35rem 0 0; }
+.ln-error[hidden] { display: none; }
+.ln-countdown-inline { font-weight: 700; margin: .4rem 0 0; min-height: 1.5rem; }
+.ln-field input[type=date] { min-height: 2.75rem; }
+.ln-seg-btn { padding: 0 .2rem; }
+.ln-seg:has(> :nth-child(4)) .ln-seg-btn { font-size: 1rem; }
+
+/* exam countdown: the one big number, written on a slip */
+.ln-count { position: relative; isolation: isolate; text-align: center; padding: 1rem .75rem .9rem; margin: .25rem 0 1rem; }
+.ln-count::before, .ln-count::after { content: ""; position: absolute; inset: 0; clip-path: var(--torn); }
+.ln-count::before { z-index: -2; background: var(--shadow); transform: translate(1px, 3px); opacity: .7; }
+.ln-count::after { z-index: -1; background-color: var(--label-pink); background-image: var(--grain); background-blend-mode: var(--grain-blend); }
+.ln-count-num { margin: 0; display: flex; align-items: baseline; justify-content: center; gap: .5rem; flex-wrap: wrap; }
+.ln-count-big { font-family: var(--hand); font-size: 3.6rem; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ln-count-unit { font-family: var(--hand); font-size: 1.3rem; font-weight: 700; }
+.ln-count-sub { margin: .35rem 0 0; color: var(--text); font-size: .95rem; }
+.ln-mock-result .ln-count-num { justify-content: flex-start; }
+.ln-days { list-style: none; margin: 1rem 0 0; padding: 0; }
+.ln-day { border-top: 1px dashed var(--line); padding: .6rem 0 .25rem; }
+.ln-day-title { display: flex; align-items: center; gap: .5rem; margin: 0; font-size: 1.15rem; }
+.ln-day.today .ln-day-title { color: var(--accent); }
+.ln-tag.today { border-color: var(--pink-strong); background: var(--pink); color: var(--slip-text); }
+.ln-day-items::before { display: none; }
+.ln-free { padding: .4rem 0 .4rem 2.6rem; font-size: .9rem; }
+.ln-mistakes { list-style: none; margin: 0; padding: 0; }
+.ln-mistakes li { display: flex; gap: .6rem; align-items: flex-start; padding: .45rem 0; line-height: 1.6; border-bottom: 1px dotted var(--line); }
+.ln-x { color: var(--danger); font-weight: 800; flex: none; }
+.ln-ex-steps { margin: .25rem 0 .5rem; padding-left: 1.3rem; line-height: 1.7; }
+.ln-ex-answer { margin: .25rem 0 0; font-weight: 600; }
+.ln-redo h3 { margin: 0 0 .5rem; }
+.ln-nb-list { list-style: none; margin: .75rem 0 0; padding: 0; }
+.ln-nb-list .ln-node-btn:disabled { cursor: default; opacity: .7; }
+.ln-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ln-timerbar {
+  position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: .6rem; padding: .5rem .8rem; margin: 0 0 .5rem;
+  border: 1px solid var(--line); border-radius: .4rem; background-color: var(--bar); background-image: var(--grain); background-blend-mode: var(--grain-blend);
+  box-shadow: 0 3px 6px -3px var(--shadow);
+}
+.ln-timer-label { color: var(--muted); font-size: .9rem; font-weight: 600; }
+.ln-timer { font-family: var(--hand); font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ln-timer.low { color: var(--danger); }
+.ln-timer.low::after { content: " !"; }
+.ln-timer-count { margin-left: auto; color: var(--muted); font-size: .9rem; font-weight: 600; }
+.ln-review { margin-top: 1rem; }
+.ln-review summary { min-height: 2.75rem; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--accent); }
+.ln-review summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ln-mock-result:focus, .ln-quiz-result:focus { outline: none; }
+
+/* role */
+.ln-tasks { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.ln-task { border: 1px solid var(--line); border-radius: .4rem; background-color: var(--card); background-image: var(--grain); background-blend-mode: var(--grain-blend); box-shadow: 0 1px 2px var(--shadow); }
+.ln-task.open { border-color: var(--blue-strong); }
+.ln-task-head { display: flex; align-items: center; gap: .7rem; width: 100%; min-height: 3.25rem; padding: .6rem .75rem; border: 0; background: transparent; font: inherit; color: var(--text); text-align: start; cursor: pointer; }
+.ln-task-num {
+  display: inline-flex; align-items: center; justify-content: center; width: 1.9rem; height: 1.9rem; flex: none;
+  font-weight: 700; color: var(--slip-text); background: var(--pink); clip-path: var(--torn);
+}
+.ln-task-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
+.ln-task-title { font-family: var(--hand); font-size: 1.2rem; font-weight: 700; }
+.ln-task-chev { font-size: 1.4rem; color: var(--muted); width: 1.5rem; text-align: center; }
+.ln-task-body { padding: 0 .85rem .75rem; border-top: 1px dashed var(--line); }
+.ln-task-body h4 { margin: .75rem 0 .25rem; font-size: 1.05rem; }
+.ln-task-body > p { line-height: 1.6; }
+.ln-outputs { margin: 0; padding-left: 1.2rem; line-height: 1.6; }
+.ln-ab-list { list-style: none; margin: 0; padding: 0; }
+.ln-lv-have { fill: var(--blue-strong); stroke: var(--accent); stroke-width: 1.5; }
+.ln-lv-need { fill: none; stroke: var(--danger); stroke-width: 2; stroke-dasharray: 4 2; }
+.ln-lv-none { fill: none; stroke: var(--line); stroke-width: 1; }
+.ln-chart-key { margin: .25rem 0 0; font-size: .85rem; }
+.ln-selfrow { margin: 0 0 .9rem; padding: .6rem .7rem .75rem; border: 1px solid var(--line); border-radius: .4rem; background: var(--card); }
+.ln-selfrow-title { font-weight: 700; font-size: 1.05rem; padding: 0; }
+.ln-selfrow-what { margin: .15rem 0 .5rem; width: 100%; line-height: 1.5; }
+.ln-level-btn { flex: 1 1 4rem; display: flex; flex-direction: column; align-items: center; gap: .05rem; padding: .3rem .2rem; }
+.ln-level-num { font-size: 1.15rem; font-weight: 800; line-height: 1.1; }
+.ln-level-text { font-size: .8rem; font-weight: 600; }
+.ln-level-btn.on::before { content: none; }
+.ln-level-btn.on .ln-level-num::after { content: " ✓"; }
+.ln-shared { margin: 0 0 .5rem; }
+.ln-ability .ln-figure { margin-top: .25rem; }

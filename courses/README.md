@@ -75,11 +75,62 @@ export default {
 - Name specific products (for example 剪映 / CapCut) only as examples.
 - Keep paragraphs short. They are read on a 360-px-wide phone.
 
-## Release B (planned extensions, not implemented)
+## Types: `topic`, `exam`, `role`
 
-These additions are backward compatible: version-1 topic packs stay valid.
+All three use the same engine: assessment, then a path, then lessons with a quiz, then progress. Each type adds the fields below. `demoNotice` (a plain sentence) is required for `exam` and `role` packs and is shown wherever the pack appears.
 
-- `type: 'exam'` adds an `exam` block (mock question set with `chapter` tags, time limit). Nodes act as chapters. Lesson sections can carry `kind` (`keyPoints` / `mistakes` / `example`).
-- `type: 'role'` adds a `role` block: `tasks[]` (each with `outputs[]` and `abilities[]`) and `abilities[]` (`requiredLevel` 1–3, `nodes[]`, `what`, `practice`).
-- Shared nodes: a node entry `{ ref: '<packId>:<nodeId>' }` reuses another pack's lesson content. Progress stays per pack, and the validator rejects dangling references.
-- Learner progress lives under the `hourlog.learning` key (`{ v, courses }`). Release B bumps `v` to 2 and adds a migration step in `js/learn-store.js`, so Release A progress carries over.
+### `exam`
+
+- `levels` may be left out, because every chapter is required. Nodes are chapters: give each one `level: 1` and `prereqs: []`. The study order comes from diagnostic scores.
+- Each assessment question tags its chapter with `node` (and `dimension`). A chapter's diagnostic score drives the plan: weakest chapters come first.
+- Chapter lessons use a different shape from topic lessons:
+
+```js
+lesson: {
+  keyPoints: [ { heading, body: ['…'] } ],                // shown one part at a time
+  mistakes: ['…'],                                       // common mistakes
+  example: { problem: '…', steps: ['…'], answer: '…' },  // worked example, revealed on demand
+  askQuestions: ['…'],                                   // optional
+  quiz: [ Question, … ],                                 // chapter quiz, same pass rule
+}
+```
+
+- `exam: { mock: { timeLimitMinutes, questions: [ { ...Question, chapter: '<node id>' } ] } }`. The demo has 15 questions and 20 minutes.
+- Learner state adds a daily plan, a wrong-answer notebook (diagnostic, chapter quiz and mock questions) and mock attempts.
+
+### `role`
+
+```js
+role: {
+  abilities: [ { id, title, what, practice: ['…'], requiredLevel: 1..3, nodes: ['<node id>', …] } ],
+  tasks:     [ { id, title, desc, outputs: ['…'], abilities: ['<ability id>', …] } ],
+}
+```
+
+- Every assessment question needs `ability` (plus `node` and `dimension`). The learner first rates each ability from 0 to 3. If any of an ability's questions is answered wrongly, that ability counts as level 1 at most.
+- Gap = required level minus assessed level. A node is mastered by the assessment only when every ability that lists it has gap 0 or less.
+- The path is ordered by the largest gap first. A prerequisite inherits the gap of the node that needs it, so it is pulled forward.
+
+### Shared nodes (any type)
+
+A node entry can reuse another pack's lesson instead of repeating it:
+
+```js
+{ ref: 'video-editing-basics:cut-points', stage: 'cut' }        // optional: level, dimensions, prereqs, id
+```
+
+- The referenced node's title, summary, level, dimensions and lesson are copied in.
+- By default, `prereqs` are the source node's prereqs that appear earlier in this pack.
+- Progress is kept per pack, so the same lesson in two packs is tracked separately.
+- A reference to a pack or node that doesn't exist (or that failed to load) hides the referencing pack, with a console warning.
+
+## Learner progress
+
+Progress is stored under the `hourlog.learning` key as `{ v, courses }`, currently `v: 2`.
+
+- Release A wrote `v: 1`. The upgrade keeps every v1 field and adds defaults (`tests/migration.test.mjs` runs this against a real v1 payload).
+- Any new progress field needs a version bump and a step in `migrate()` in `js/learn-store.js`. Otherwise an older build would strip the field.
+
+## Releasing
+
+Every file under `courses/` is listed in `PACK_FILES` with the same `?v=<version>` query as the rest of the app. Before publishing a release, run `node tools/asset-version.mjs bump` from `web/`. `node --test` fails if any reference lacks the current version.

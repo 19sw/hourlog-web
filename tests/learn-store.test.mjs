@@ -10,13 +10,13 @@ test('save, reload, remove; versioned payload under its own key', () => {
   const b = mem();
   const s = createLearnStore(b); s.load();
   assert.equal(s.getCourse('x'), null);
-  const st = applySetup(emptyCourseState(), { goalLevel: 3, weeklyTarget: 5 });
+  const st = applySetup(emptyCourseState(), { goalLevel: 3, weeklyTarget: 5, examDate: null });
   assert.equal(s.saveCourse('x', st), true);
   const raw = JSON.parse(b.getItem(LEARN_KEY));
   assert.equal(raw.v, LEARN_VERSION);
-  assert.deepEqual(raw.courses.x.setup, { goalLevel: 3, weeklyTarget: 5 });
+  assert.deepEqual(raw.courses.x.setup, { goalLevel: 3, weeklyTarget: 5, examDate: null });
   const s2 = createLearnStore(b); s2.load();
-  assert.deepEqual(s2.getCourse('x').setup, { goalLevel: 3, weeklyTarget: 5 });
+  assert.deepEqual(s2.getCourse('x').setup, { goalLevel: 3, weeklyTarget: 5, examDate: null });
   // getCourse returns a copy
   s2.getCourse('x').setup.goalLevel = 1;
   assert.equal(s2.getCourse('x').setup.goalLevel, 3);
@@ -45,7 +45,7 @@ test('corrupt payload is backed up and replaced on next save', () => {
   assert.equal(b.getItem(LEARN_BACKUP_KEY), '{oops');
   assert.equal(s.getCourse('x'), null);
   s.saveCourse('x', emptyCourseState());
-  assert.equal(JSON.parse(b.getItem(LEARN_KEY)).v, 1);
+  assert.equal(JSON.parse(b.getItem(LEARN_KEY)).v, LEARN_VERSION);
 });
 
 test('payload from a newer version is read but never overwritten', () => {
@@ -55,13 +55,13 @@ test('payload from a newer version is read but never overwritten', () => {
   const s = createLearnStore(b); s.load();
   assert.equal(s.readOnly, true);
   assert.equal(s.persistent, false);
-  assert.deepEqual(s.getCourse('x').setup, { goalLevel: 1, weeklyTarget: 2 });
+  assert.deepEqual(s.getCourse('x').setup, { goalLevel: 1, weeklyTarget: 2, examDate: null });
   assert.equal(s.saveCourse('x', emptyCourseState()), false);
   assert.equal(b.getItem(LEARN_KEY), future);
 });
 
 test('migrate: v1 is normalized; garbage yields null', () => {
-  assert.deepEqual(migrate({ v: 1, courses: { a: { setup: { goalLevel: 2, weeklyTarget: 4 } } } }).data.courses.a.setup, { goalLevel: 2, weeklyTarget: 4 });
+  assert.deepEqual(migrate({ v: 1, courses: { a: { setup: { goalLevel: 2, weeklyTarget: 4 } } } }).data.courses.a.setup, { goalLevel: 2, weeklyTarget: 4, examDate: null });
   assert.equal(migrate([]).data, null);
   assert.equal(migrate({ courses: {} }).data, null);
   assert.equal(migrate(null).data, null);
@@ -133,7 +133,7 @@ test('a newer build writing in another tab turns this store read-only instead of
   const b = mem();
   const s = createLearnStore(b); s.load();
   s.update('x', () => emptyCourseState());
-  const future = JSON.stringify({ v: 2, courses: {} });
+  const future = JSON.stringify({ v: LEARN_VERSION + 1, courses: {} });
   b.setItem(LEARN_KEY, future);
   assert.equal(s.update('x', (cur) => applySetup(cur, { goalLevel: 1, weeklyTarget: 1 })).changed, false);
   assert.equal(s.readOnly, true);
@@ -150,4 +150,21 @@ test('learn refresh never replaces memory while degraded', () => {
   s.update('x', (cur) => setWeeklyTarget(cur, 6));
   s.refresh();
   assert.equal(s.getCourse('x').setup.weeklyTarget, 6);
+});
+
+test('N3: learning store stays degraded after a write failure even if storage recovers', () => {
+  let fail = false;
+  const m = new Map();
+  const b = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (fail) throw new Error('quota'); m.set(k, v); } };
+  const a = createLearnStore(b); a.load();
+  a.update('x', () => applySetup(emptyCourseState(), { goalLevel: 1, weeklyTarget: 1 }));
+  fail = true;
+  a.update('x', (cur) => setWeeklyTarget(cur, 2));
+  fail = false;
+  const other = createLearnStore(b); other.load();
+  other.update('x', (cur) => setWeeklyTarget(cur, 7));
+  const r = a.update('x', (cur) => setWeeklyTarget(cur, 3));
+  assert.equal(r.saved, false);
+  const fresh = createLearnStore(b); fresh.load();
+  assert.equal(fresh.getCourse('x').setup.weeklyTarget, 7);
 });
