@@ -49,3 +49,32 @@ test('missing backend works in memory', () => {
   assert.equal(s.add({ text: 'x', timestamp: 1 }).saved, false);
   assert.equal(s.list().length, 1);
 });
+
+test('two tabs sharing storage: alternating writes from stale copies all survive', () => {
+  const b = mem();
+  const tabA = createStore(b); tabA.load();
+  const tabB = createStore(b); tabB.load(); // both loaded while storage was empty
+  const a1 = tabA.add({ text: 'from A', timestamp: 1 }).entry;
+  tabB.add({ text: 'from B', timestamp: 2 });            // B never saw A's entry in memory
+  tabA.update(a1.id, { text: 'from A, edited' });         // A never saw B's entry
+  const b2 = tabB.add({ text: 'from B again', timestamp: 3 }).entry;
+  tabA.remove(b2.id);                                     // A deletes an entry it never loaded
+  const fresh = createStore(b); fresh.load();
+  assert.deepEqual(fresh.list().map((e) => e.text).sort(), ['from A, edited', 'from B']);
+  // in-memory views catch up on the next write or an explicit refresh
+  tabB.refresh();
+  assert.equal(tabB.list().length, 2);
+});
+
+test('refresh never replaces memory while degraded', () => {
+  let fail = false;
+  const m = new Map();
+  const b = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (fail) throw new Error('quota'); m.set(k, v); } };
+  const s = createStore(b); s.load();
+  s.add({ text: 'saved', timestamp: 1 });
+  fail = true;
+  s.add({ text: 'memory only', timestamp: 2 });
+  assert.equal(s.persistent, false);
+  s.refresh();
+  assert.deepEqual(s.list().map((e) => e.text), ['saved', 'memory only']);
+});

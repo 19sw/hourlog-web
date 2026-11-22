@@ -5,6 +5,8 @@
 
 const KEY = 'hourlog.entries.v1';
 
+const valid = (e) => e && typeof e.id === 'string' && typeof e.text === 'string' && Number.isFinite(e.timestamp);
+
 export function createStore(backend) {
   let entries = [];
   let persistent = true;
@@ -15,13 +17,25 @@ export function createStore(backend) {
       const raw = backend.getItem(KEY);
       const parsed = raw ? JSON.parse(raw) : [];
       entries = Array.isArray(parsed)
-        ? parsed.filter((e) => e && typeof e.id === 'string' && typeof e.text === 'string' && Number.isFinite(e.timestamp))
+        ? parsed.filter(valid)
         : [];
     } catch {
       entries = [];
       persistent = false;
     }
     return entries.slice();
+  }
+
+  // Re-read the backend before every write so a second tab (or a stale tab
+  // left open for days) cannot overwrite entries it never saw. Skipped while
+  // degraded: then memory is the only copy and must not be replaced.
+  function refresh() {
+    if (!persistent || !backend) return;
+    try {
+      const raw = backend.getItem(KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) entries = parsed.filter(valid);
+    } catch { /* keep memory */ }
   }
 
   function flush() {
@@ -42,21 +56,26 @@ export function createStore(backend) {
 
   return {
     load,
+    /** Pick up changes written by other tabs (no-op while degraded). */
+    refresh,
     list: () => entries.slice(),
     get persistent() { return persistent; },
     /** @returns {{entry, saved:boolean}} saved=false when the write failed (entry still in memory). */
     add({ text, timestamp }) {
+      refresh();
       const entry = { id: newId(), text, timestamp };
       entries.push(entry);
       return { entry, saved: flush() };
     },
     update(id, patch) {
+      refresh();
       const i = entries.findIndex((e) => e.id === id);
       if (i < 0) return { entry: null, saved: false };
       entries[i] = { ...entries[i], ...patch, id };
       return { entry: entries[i], saved: flush() };
     },
     remove(id) {
+      refresh();
       const n = entries.length;
       entries = entries.filter((e) => e.id !== id);
       return { removed: entries.length !== n, saved: flush() };

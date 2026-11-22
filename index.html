@@ -123,11 +123,16 @@
       </div>
       <ol id="hours" class="hours"></ol>
     </section>
+
+    <section id="viewLearn" class="view" aria-labelledby="tabLearn" hidden>
+      <div id="learnRoot" class="ln"></div>
+    </section>
   </main>
 
   <nav class="tabs" role="tablist">
     <button id="tabLog" class="tab" role="tab" type="button" aria-selected="true"></button>
     <button id="tabTimeline" class="tab" role="tab" type="button" aria-selected="false"></button>
+    <button id="tabLearn" class="tab" role="tab" type="button" aria-selected="false"></button>
   </nav>
 </div>
 
@@ -153,6 +158,15 @@
   <div class="row">
     <button id="confirmCancel" class="btn secondary" type="button"></button>
     <button id="confirmOk" class="btn danger solid" type="button"></button>
+  </div>
+</dialog>
+
+<dialog id="lnConfirm">
+  <h2 id="lnConfirmTitle"></h2>
+  <p id="lnConfirmBody"></p>
+  <div class="row">
+    <button id="lnConfirmCancel" class="btn secondary" type="button"></button>
+    <button id="lnConfirmOk" class="btn danger solid" type="button"></button>
   </div>
 </dialog>
 

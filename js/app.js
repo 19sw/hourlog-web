@@ -3,6 +3,8 @@ import { slotsForDay, presetDate, normalizeText, startOfDay, addDays, isSameDay,
 import { createStore } from './storage.js';
 import { pickLocale, speechLang, t as tr } from './i18n.js';
 import { speechSupported, startSpeech } from './speech.js';
+import { createLearnStore } from './learn-store.js';
+import { initLearn } from './learn.js';
 
 const $ = (id) => document.getElementById(id);
 const locale = pickLocale(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]);
@@ -19,6 +21,8 @@ function getBackend() {
 
 const store = createStore(getBackend());
 store.load();
+const learnStore = createLearnStore(getBackend());
+learnStore.load();
 
 let currentDay = startOfDay(new Date());
 let lastSeenToday = startOfDay(new Date());
@@ -41,6 +45,8 @@ function applyStrings() {
   $('saveBtn').textContent = t('save');
   $('tabLog').textContent = t('tabLog');
   $('tabTimeline').textContent = t('tabTimeline');
+  $('tabLearn').textContent = t('tabLearn');
+  $('lnConfirmCancel').textContent = t('cancel');
   $('prevDay').setAttribute('aria-label', t('prevDay'));
   $('nextDay').setAttribute('aria-label', t('nextDay'));
   $('dateLabel').textContent = t('date');
@@ -63,20 +69,27 @@ function applyStrings() {
 
 function updateWarn() {
   const w = $('warn');
-  if (store.persistent) { w.hidden = true; } else { w.hidden = false; w.textContent = t('storageWarn'); }
+  if (!store.persistent) { w.hidden = false; w.textContent = t('storageWarn'); }
+  else if (!learnStore.persistent && !learnStore.readOnly) { w.hidden = false; w.textContent = t('storageWarnLearn'); }
+  else { w.hidden = true; }
 }
 
 // ---------- tabs ----------
 function showTab(name) {
   const tl = name === 'timeline';
-  $('viewLog').hidden = tl;
+  const ln = name === 'learn';
+  $('viewLog').hidden = name !== 'log';
   $('viewTimeline').hidden = !tl;
-  $('tabLog').setAttribute('aria-selected', String(!tl));
+  $('viewLearn').hidden = !ln;
+  $('tabLog').setAttribute('aria-selected', String(name === 'log'));
   $('tabTimeline').setAttribute('aria-selected', String(tl));
+  $('tabLearn').setAttribute('aria-selected', String(ln));
   if (tl) { renderTimeline(); scrollToCurrentHour(); }
+  if (ln) { document.querySelector('main').scrollTop = 0; learn.show(); }
 }
 $('tabLog').onclick = () => showTab('log');
 $('tabTimeline').onclick = () => showTab('timeline');
+$('tabLearn').onclick = () => showTab('learn');
 
 // ---------- quick entry ----------
 let speech = null;
@@ -246,6 +259,33 @@ $('confirmOk').onclick = () => {
   renderTimeline();
 };
 
+// ---------- learn ----------
+let confirmAction = null;
+function learnConfirm({ title, body, ok }, onOk) {
+  $('lnConfirmTitle').textContent = title;
+  $('lnConfirmBody').textContent = body;
+  $('lnConfirmOk').textContent = ok;
+  confirmAction = onOk;
+  $('lnConfirm').showModal();
+}
+$('lnConfirmCancel').onclick = () => { confirmAction = null; $('lnConfirm').close(); };
+$('lnConfirmOk').onclick = () => {
+  const fn = confirmAction; confirmAction = null; // run once even on a double tap
+  $('lnConfirm').close();
+  if (fn) fn();
+};
+const learn = initLearn({
+  root: $('learnRoot'),
+  scroller: document.querySelector('main'),
+  entries: store,
+  learnStore,
+  t,
+  locale,
+  onTimelineChange: () => { updateWarn(); renderTimeline(); },
+  onStorageChange: updateWarn,
+  confirm: learnConfirm,
+});
+
 // ---------- help tip ----------
 $('helpBtn').onclick = () => $('tip').showModal();
 $('tipOk').onclick = () => { $('tip').close(); try { localStorage.setItem('hourlog.tipSeen', '1'); } catch { /* ignore */ } };
@@ -253,6 +293,9 @@ $('tipOk').onclick = () => { $('tip').close(); try { localStorage.setItem('hourl
 // ---------- day rollover on return ----------
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
+  // Another tab may have written while this one was in the background.
+  store.refresh();
+  learnStore.refresh();
   const today = startOfDay(new Date());
   if (today.getTime() !== lastSeenToday.getTime()) {
     const wasOnOldToday = isSameDay(currentDay, lastSeenToday);
@@ -261,6 +304,19 @@ document.addEventListener('visibilitychange', () => {
   }
   renderTimeline();
   if (!$('viewTimeline').hidden) scrollToCurrentHour();
+  if (!$('viewLearn').hidden) learn.show();
+});
+
+// ---------- other tabs ----------
+// Writes re-read storage first (see storage.js / learn-store.js); this keeps
+// what is on screen current too.
+window.addEventListener('storage', (e) => {
+  if (e.key !== null && !e.key.startsWith('hourlog.')) return;
+  store.refresh();
+  learnStore.refresh();
+  updateWarn();
+  renderTimeline();
+  if (!$('viewLearn').hidden) learn.show();
 });
 
 // ---------- init ----------
