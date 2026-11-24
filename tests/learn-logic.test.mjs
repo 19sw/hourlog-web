@@ -5,7 +5,7 @@ import {
   answerAssessment, completeAssessment, resetAssessment, assessmentMasteredNodes, dimensionScores,
   computePath, groupByStage, missingPrereqs, submitQuiz, gradeQuiz, toggleCheck, rateReflection,
   revealReflection, setLessonStep, startOfWeek, weekInterval, masteredThisWeek, dimensionProgress,
-  stuckNodes, prioritizeStuck, courseSummary, mascotKey, isMastered, shuffleOrder,
+  stuckNodes, prioritizeStuck, courseSummary, mascotKey, isMastered, shuffleOrder, isBodyItem, parseResult,
 } from '../js/learn-logic.js';
 
 // ---- a small synthetic pack -------------------------------------------------
@@ -84,6 +84,59 @@ test('validator rejects missing fields, bad references and bad answers', () => {
   }
   assert.equal(validatePack(null).ok, false);
   assert.equal(validatePack('x').ok, false);
+});
+
+test('code blocks: body items may be { code, result?, lang? } and questions may carry code', () => {
+  const p = makePack();
+  p.nodes[0].lesson.sections = [{ heading: 'h', body: [
+    'text',
+    { code: 'SELECT 1;' },
+    { code: 'SELECT a, b FROM t;', result: 'a\tb\n1\t2\n3\tNULL' },
+    { code: 'SELECT a FROM t WHERE 1 = 0;', result: 'a' },   // header only = no rows
+    { code: 'brew install mysql', lang: 'shell' },
+    { code: 'SELECT 2;', lang: 'sql', result: 'x\n' },     // a row with one empty cell
+  ] }];
+  p.nodes[0].lesson.quiz[0].code = 'SELECT * FROM t;';
+  p.assessment.questions[0].code = 'SELECT 1;';
+  assert.deepEqual(validatePack(p), { ok: true, errors: [] });
+  assert.deepEqual(parseResult('a\tb\n1\t2'), { head: ['a', 'b'], rows: [['1', '2']] });
+  assert.deepEqual(parseResult('a'), { head: ['a'], rows: [] });
+});
+
+test('code blocks: malformed body items and question code are rejected', () => {
+  const badItems = [
+    { code: '' }, { code: '   ' }, { code: 5 }, { text: 'x' }, {}, null, [], ['SELECT 1;'], 7,
+    { code: 'x', extra: 1 },                        // unknown key (typo guard)
+    { code: 'x', result: 'a\tb\n1' },              // ragged result
+    { code: 'x', result: '' },                       // empty result
+    { code: 'x', result: '\tb\n1\t2' },            // empty header cell
+    { code: 'x', result: 3 },
+    { code: 'x', lang: 'python' },
+    { code: 'ls', lang: 'shell', result: 'a\n1' },   // shell commands have no query result
+  ];
+  for (const [i, item] of badItems.entries()) {
+    assert.equal(isBodyItem(item), false, `item ${i}`);
+    const p = makePack();
+    p.nodes[0].lesson.sections = [{ heading: 'h', body: ['ok', item] }];
+    assert.equal(validatePack(p).ok, false, `item ${i} rejected by validatePack`);
+  }
+  for (const code of ['', '  ', 5, null, ['x']]) {
+    const p = makePack(); p.nodes[0].lesson.quiz[0].code = code;
+    assert.equal(validatePack(p).ok, false, `quiz code ${JSON.stringify(code)}`);
+    const a = makePack(); a.assessment.questions[0].code = code;
+    assert.equal(validatePack(a).ok, false, `assessment code ${JSON.stringify(code)}`);
+  }
+});
+
+test('code blocks: exam key points accept code items too; plain-string bodies are unchanged', async () => {
+  assert.equal(isBodyItem('paragraph'), true);
+  assert.equal(isBodyItem(''), false);
+  const { default: exam } = await import('../courses/micro-econ-final.js');
+  const p = structuredClone(exam);
+  p.nodes[0].lesson.keyPoints[0].body.push({ code: 'SELECT 1;', result: 'x\n1' });
+  assert.deepEqual(validatePack(p), { ok: true, errors: [] });
+  p.nodes[0].lesson.keyPoints[0].body.push({ code: '' });
+  assert.equal(validatePack(p).ok, false);
 });
 
 // ---- path rule (Required Behavior 4) -------------------------------------------

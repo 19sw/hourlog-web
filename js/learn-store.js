@@ -14,7 +14,7 @@
 // session (never writes again until reload), so a stale in-memory copy can't
 // later overwrite what other tabs saved meanwhile.
 
-import { normalizeCourseState } from './learn-logic.js?v=20261122d';
+import { normalizeCourseState } from './learn-logic.js?v=20261123c';
 
 export const LEARN_KEY = 'hourlog.learning';
 export const LEARN_BACKUP_KEY = 'hourlog.learning.corrupt';

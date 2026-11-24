@@ -8,14 +8,14 @@ import {
   assessmentMasteredNodes, dimensionScores, isCorrect, computePath, groupByStage, missingPrereqs,
   setLessonStep, toggleCheck, revealReflection, rateReflection, submitQuiz, weekInterval, masteredThisWeek,
   dimensionProgress, stuckNodes, prioritizeStuck, courseSummary, mascotKey, isMastered, SELF_RATING,
-  WEEKLY_MIN, WEEKLY_MAX, shuffleOrder, setSelfRating, replan,
-} from './learn-logic.js?v=20261122d';
+  WEEKLY_MIN, WEEKLY_MAX, shuffleOrder, setSelfRating, replan, parseResult,
+} from './learn-logic.js?v=20261123c';
 import {
   isoOf, parseISODate, daysBetween, validateExamDate, chapterScores, planProgress, notebookItems, redoNotebook,
   startMock, answerMock, mockRemaining, submitMock, scoreMock, mockOptionOrder, seededOptionOrder,
-} from './learn-exam.js?v=20261122d';
-import { abilityGaps, abilityProgress, SELF_LEVELS } from './learn-role.js?v=20261122d';
-import { loadPacks } from '../courses/index.js?v=20261122d';
+} from './learn-exam.js?v=20261123c';
+import { abilityGaps, abilityProgress, SELF_LEVELS } from './learn-role.js?v=20261123c';
+import { loadPacks } from '../courses/index.js?v=20261123c';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -455,6 +455,28 @@ export function initLearn({ root, scroller, entries, learnStore, t, locale, onTi
     });
   }
 
+  /** A lesson body item: a paragraph, or a code block with an optional query result. */
+  function bodyItem(item) {
+    if (typeof item === 'string') return h('p', { text: item });
+    const res = item.result !== undefined ? parseResult(item.result) : null;
+    return h('div', { class: 'ln-code-item' }, codeBlock(item.code, item.lang), res ? resultTable(res) : null);
+  }
+
+  /** Monospace code, scrolls sideways inside itself (never widens the page). Text only, no highlighting. */
+  function codeBlock(code, lang = 'sql') {
+    return h('pre', { class: 'ln-code' + (lang === 'shell' ? ' shell' : ''), tabIndex: 0, role: 'region', 'aria-label': t(lang === 'shell' ? 'lnShellLabel' : 'lnCodeLabel') }, h('code', { text: code }));
+  }
+
+  /** Query result as a real table (header + rows), also scrolling inside itself. */
+  function resultTable({ head, rows }) {
+    const numeric = head.map((name, j) => !/(code|_id|_no)$/i.test(name) && rows.length > 0 && rows.every((r) => /^-?[0-9][0-9,]*(\.[0-9]+)?$|^NULL$/.test(r[j])));
+    return h('div', { class: 'ln-result-wrap', tabIndex: 0, role: 'region', 'aria-label': t('lnResultCaption') },
+      h('table', { class: 'ln-result-table' },
+        h('caption', { text: rows.length ? t('lnResultCaption') : t('lnResultNoRows') }),
+        h('thead', null, h('tr', null, head.map((c) => h('th', { scope: 'col', text: c })))),
+        h('tbody', null, rows.map((r) => h('tr', null, r.map((c, j) => h('td', { class: (numeric[j] ? 'num' : '') + (c === 'NULL' ? ' null' : ''), text: c })))))));
+  }
+
   /**
    * One single-choice question. Options are buttons (assessment, immediate) or
    * radios (lesson quiz). Option values are always ORIGINAL option indexes;
@@ -466,6 +488,7 @@ export function initLearn({ root, scroller, entries, learnStore, t, locale, onTi
   function questionCard(q, { label, chosen, locked, keyPrefix, onPick, radio = false, reveal = false, order = null }) {
     const card = h('fieldset', { class: 'ln-q' + (locked ? ' locked' : '') });
     card.append(h('legend', { class: 'ln-q-prompt' }, label ? h('span', { class: 'ln-q-num', text: label }) : null, h('span', { text: q.prompt })));
+    if (q.code) card.append(codeBlock(q.code));
     const opts = h('div', { class: 'ln-opts' });
     const ok = isCorrect(q, chosen);
     for (const i of order || q.options.map((_, j) => j)) {
@@ -1230,7 +1253,7 @@ export function initLearn({ root, scroller, entries, learnStore, t, locale, onTi
     sections.slice(0, step).forEach((sec, i) => {
       ol.append(h('li', { class: 'ln-step' },
         h('p', { class: 'ln-step-count', text: t('lnStepOf', { i: i + 1, n: sections.length }) }),
-        h('h4', { text: sec.heading }), sec.body.map((p) => h('p', { text: p }))));
+        h('h4', { text: sec.heading }), sec.body.map(bodyItem)));
     });
     exp.append(ol);
     if (step < sections.length) {

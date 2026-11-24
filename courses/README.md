@@ -40,7 +40,7 @@ export default {
       dimensions: ['concept'],// 1+ dimension ids. Used for the progress chart
       prereqs: [],           // ids of EARLIER nodes only (no cycles), each with level <= this node's level
       lesson: {
-        sections: [ { heading: '…', body: ['paragraph', 'paragraph'] } ], // shown one at a time
+        sections: [ { heading: '…', body: ['paragraph', { code: 'SELECT …;', result: '…' }] } ], // shown one at a time; see "Code blocks"
         askQuestions: ['…'],                                             // "questions worth asking", copyable
         task: { prompt: '…', criteria: ['checkable item', '…'] },        // self-checked acceptance criteria
         reflection: { question: '…', answer: 'reference answer' },
@@ -57,10 +57,27 @@ export default {
 // Question
 { id: 'specs-q1',            // unique across the whole pack (lesson quizzes and assessment)
   prompt: '…',
+  code: 'SELECT …;',         // optional: code shown under the prompt (for "what does this query return?")
   options: ['…', '…', '…'],  // 2+ distinct strings
   answer: 2,                 // index of the ONE correct option
   explanation: '…' }         // why it is right; shown after answering
 ```
+
+### Code blocks
+
+A lesson body item (topic `sections[].body`, exam `keyPoints[].body`) is either a paragraph string or a code block:
+
+```js
+{ code: 'SELECT customer_id, customer_name\nFROM customers;',   // required, non-empty; newlines and indentation are kept
+  result: 'customer_id\tcustomer_name\nC001\t北辰科技有限公司',  // optional: query output, tab-separated, header line first
+  lang: 'sql' }                                                // optional: 'sql' (default) or 'shell' (terminal commands, no result)
+```
+
+- Code is shown in a monospace block that scrolls sideways inside itself, so a long line never widens the page. There is no syntax highlighting. Everything is set with `textContent`.
+- `result` is shown as a small table under the code. Every line must have the same number of tab-separated cells; a header line alone means "no rows". `NULL` cells are shown dimmed, numeric columns are right-aligned.
+- A Question may have `code` (a non-empty string), shown under the prompt in the same kind of block.
+- The validator rejects an empty or non-string `code`, any other key on a code item, an unknown `lang`, a `result` on a shell block and a ragged `result`.
+- Packs whose code runs against real data should be checked against that data. `mysql-for-accounting` is: `tools/check-course-sql.mjs` runs every block on MySQL and compares `result` (see `practice/mysql-accounting/README.md`).
 
 ### How the engine uses it
 

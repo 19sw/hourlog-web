@@ -480,3 +480,22 @@ dialog h2 { margin: 0 0 .75rem; font-size: 1.35rem; }
 .ln-level-btn.on .ln-level-num::after { content: " ✓"; }
 .ln-shared { margin: 0 0 .5rem; }
 .ln-ability .ln-figure { margin-top: .25rem; }
+
+/* ---------- Learn: code blocks and query results (course packs with SQL) ---------- */
+.ln-code-item { margin: .6rem 0; min-width: 0; }
+.ln-code {
+  margin: .5rem 0; padding: .65rem .8rem; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  white-space: pre; tab-size: 2; font: .875rem/1.55 ui-monospace, "SF Mono", Menlo, Consolas, "PingFang SC", "Noto Sans Mono CJK SC", monospace;
+  color: var(--text); background: var(--label-blue); border: 1px solid var(--line); border-left: 3px solid var(--blue-strong); border-radius: .4rem;
+}
+.ln-code code { font: inherit; color: inherit; background: none; }
+.ln-result-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: -.15rem 0 .6rem; border: 1px solid var(--line); border-radius: .4rem; background: var(--card); }
+.ln-result-table { border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; min-width: 100%; }
+.ln-result-table caption { text-align: start; padding: .35rem .6rem .2rem; color: var(--muted); font-size: .8rem; font-weight: 600; }
+.ln-result-table th, .ln-result-table td { padding: .3rem .6rem; border-top: 1px solid var(--line); white-space: nowrap; text-align: start; }
+.ln-result-table th { font-weight: 600; background: var(--bar); color: var(--text); }
+.ln-result-table td.num { text-align: end; }
+.ln-result-table td.null { color: var(--muted); font-style: italic; }
+.ln-code:focus-visible, .ln-result-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ln-q > .ln-code { margin: 0 0 .75rem; }
+.ln-code.shell { border-left-color: var(--pink-strong); }

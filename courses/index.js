@@ -3,12 +3,13 @@
 // Each file is imported on its own, so one broken or invalid pack is skipped
 // (console warning) without affecting the others or the app.
 
-import { validatePack, resolvePack } from '../js/learn-logic.js?v=20261122d';
+import { validatePack, resolvePack } from '../js/learn-logic.js?v=20261123c';
 
 export const PACK_FILES = [
-  './video-editing-basics.js?v=20261122d',
-  './micro-econ-final.js?v=20261122d',
-  './short-video-editor.js?v=20261122d',
+  './video-editing-basics.js?v=20261123c',
+  './micro-econ-final.js?v=20261123c',
+  './short-video-editor.js?v=20261123c',
+  './mysql-for-accounting.js?v=20261123c',
 ];
 
 const defaultImporter = (f) => import(f); // resolved relative to this module

@@ -1,10 +1,10 @@
 import { slotsForDay, presetDate, normalizeText, startOfDay, addDays, isSameDay,
-  toDateInputValue, toDateTimeInputValue, parseDateInput, parseDateTimeInput } from './logic.js?v=20261122d';
-import { createStore } from './storage.js?v=20261122d';
-import { pickLocale, speechLang, t as tr } from './i18n.js?v=20261122d';
-import { speechSupported, startSpeech } from './speech.js?v=20261122d';
-import { createLearnStore } from './learn-store.js?v=20261122d';
-import { initLearn } from './learn.js?v=20261122d';
+  toDateInputValue, toDateTimeInputValue, parseDateInput, parseDateTimeInput } from './logic.js?v=20261123c';
+import { createStore } from './storage.js?v=20261123c';
+import { pickLocale, speechLang, t as tr } from './i18n.js?v=20261123c';
+import { speechSupported, startSpeech } from './speech.js?v=20261123c';
+import { createLearnStore } from './learn-store.js?v=20261123c';
+import { initLearn } from './learn.js?v=20261123c';
 
 const $ = (id) => document.getElementById(id);
 const locale = pickLocale(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]);

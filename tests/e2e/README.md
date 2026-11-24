@@ -37,3 +37,12 @@ Release B adds checks for:
 - the role journey: self-rating, gap cap, gap-ordered path, map → task → ability → lesson, a shared lesson with separate progress, required-vs-current;
 - 360 and 375 px widths and tap targets on the new views.
 
+
+## 会计人的 MySQL smoke
+
+```
+cd web
+node tests/e2e/mysql-course.mjs
+```
+
+Same requirements and `OUT` option (default `hourlog-e2e-mysql` in the OS temp folder). It checks: the course is listed; setup, assessment (questions with code show it), result, path (assessed early nodes mastered, setup current); a lesson with code blocks and query results rendered verbatim as monospace blocks and tables that scroll inside themselves; no page overflow at 360 and 375 px in light and dark; AA contrast of code text, table header and NULL cells; a quiz with code passes; another course's saved progress is untouched; no external requests or console messages. It then serves a copy of `web/` whose pack carries markup in a code block, a result header and a question's code, and checks that it shows as text and never runs.

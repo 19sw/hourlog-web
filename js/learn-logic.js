@@ -4,8 +4,8 @@
 // returns a new state plus a flag saying whether something happened, so the
 // UI can log timeline entries exactly once per event.
 
-import { chapterScores, weakness, dailyPlan, isoOf, addToNotebook, parseISODate } from './learn-exam.js?v=20261122d';
-import { gapMasteredNodes, nodeGapPriority, SELF_LEVELS } from './learn-role.js?v=20261122d';
+import { chapterScores, weakness, dailyPlan, isoOf, addToNotebook, parseISODate } from './learn-exam.js?v=20261123c';
+import { gapMasteredNodes, nodeGapPriority, SELF_LEVELS } from './learn-role.js?v=20261123c';
 
 export const PACK_SCHEMA = 1;
 /** Pack types this build can run. */
@@ -21,12 +21,43 @@ const isStr = (v) => typeof v === 'string' && v.trim() !== '';
 const isStrList = (v, min = 1) => Array.isArray(v) && v.length >= min && v.every(isStr);
 const isId = (v) => typeof v === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(v);
 
+/**
+ * Query result shown under a code block: tab-separated text, first line is the
+ * header, every line has the same number of columns. A header alone means
+ * "no rows".
+ */
+export function parseResult(v) {
+  if (!isStr(v)) return null;
+  const rows = v.split('\n').map((line) => line.split('\t'));
+  const n = rows[0].length;
+  if (!rows.every((r) => r.length === n) || rows[0].some((c) => c.trim() === '')) return null;
+  return { head: rows[0], rows: rows.slice(1) };
+}
+
+export const CODE_LANGS = ['sql', 'shell'];
+
+/**
+ * Lesson body item: a paragraph string, or { code, result?, lang? } shown in a
+ * monospace block. lang is 'sql' (default) or 'shell' (terminal commands);
+ * result (query output) is only allowed for SQL.
+ */
+export function isBodyItem(v) {
+  if (isStr(v)) return true;
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  if (!Object.keys(v).every((k) => k === 'code' || k === 'result' || k === 'lang')) return false;
+  if (v.lang !== undefined && !CODE_LANGS.includes(v.lang)) return false;
+  if (v.lang === 'shell' && v.result !== undefined) return false;
+  return isStr(v.code) && (v.result === undefined || parseResult(v.result) !== null);
+}
+const isBodyList = (v) => Array.isArray(v) && v.length >= 1 && v.every(isBodyItem);
+
 function checkQuestion(q, where, errs, ids) {
   if (!q || typeof q !== 'object') { errs.push(`${where}: not an object`); return; }
   if (!isId(q.id)) errs.push(`${where}: bad id`);
   else if (ids.has(q.id)) errs.push(`${where}: duplicate question id ${q.id}`);
   else ids.add(q.id);
   if (!isStr(q.prompt)) errs.push(`${where}: missing prompt`);
+  if ('code' in q && !isStr(q.code)) errs.push(`${where}: code must be a non-empty string`);
   if (!isStrList(q.options, 2)) errs.push(`${where}: needs >= 2 non-empty options`);
   else if (new Set(q.options.map((o) => o.trim())).size !== q.options.length) errs.push(`${where}: duplicate options`);
   if (!Number.isInteger(q.answer) || !Array.isArray(q.options) || q.answer < 0 || q.answer >= q.options.length) {
@@ -95,14 +126,14 @@ export function validatePack(pack) {
     if (!L || typeof L !== 'object') errs.push(`${w}: missing lesson`);
     else if (isExam) {
       // Exam chapters: key points, common mistakes, worked example, chapter quiz.
-      if (!Array.isArray(L.keyPoints) || L.keyPoints.length < 1 || !L.keyPoints.every((s) => s && isStr(s.heading) && isStrList(s.body))) errs.push(`${w}: lesson.keyPoints need heading + body[]`);
+      if (!Array.isArray(L.keyPoints) || L.keyPoints.length < 1 || !L.keyPoints.every((s) => s && isStr(s.heading) && isBodyList(s.body))) errs.push(`${w}: lesson.keyPoints need heading + body[] (strings or { code, result? })`);
       if (!isStrList(L.mistakes)) errs.push(`${w}: lesson.mistakes needs >= 1 string`);
       if (!L.example || !isStr(L.example.problem) || !isStrList(L.example.steps) || !isStr(L.example.answer)) errs.push(`${w}: lesson.example needs problem + steps[] + answer`);
       if (L.askQuestions !== undefined && !isStrList(L.askQuestions)) errs.push(`${w}: lesson.askQuestions must be strings`);
       if (!Array.isArray(L.quiz) || L.quiz.length < 1) errs.push(`${w}: lesson.quiz needs >= 1 question`);
       else L.quiz.forEach((q, j) => checkQuestion(q, `${w} quiz[${j}]`, errs, qIds));
     } else {
-      if (!Array.isArray(L.sections) || L.sections.length < 1 || !L.sections.every((s) => s && isStr(s.heading) && isStrList(s.body))) errs.push(`${w}: lesson.sections need heading + body[]`);
+      if (!Array.isArray(L.sections) || L.sections.length < 1 || !L.sections.every((s) => s && isStr(s.heading) && isBodyList(s.body))) errs.push(`${w}: lesson.sections need heading + body[] (strings or { code, result? })`);
       if (!isStrList(L.askQuestions)) errs.push(`${w}: lesson.askQuestions needs >= 1 string`);
       if (!L.task || !isStr(L.task.prompt) || !isStrList(L.task.criteria)) errs.push(`${w}: lesson.task needs prompt + criteria[]`);
       if (!L.reflection || !isStr(L.reflection.question) || !isStr(L.reflection.answer)) errs.push(`${w}: lesson.reflection needs question + answer`);

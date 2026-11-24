@@ -31,6 +31,8 @@ node --test
 
 浏览器端到端流程（需要 Chrome，不包含在 `node --test` 里）：`node tests/e2e/run.mjs`，说明见 `tests/e2e/README.md`。
 
+「会计人的 MySQL」课程：`node tests/e2e/mysql-course.mjs` 检查课程流程和代码块显示（需要 Chrome）；`node tools/check-course-sql.mjs` 在真实 MySQL 上运行课程里的每一条 SQL 并核对结果（需要 MySQL，用法见 `practice/mysql-accounting/README.md` 第七节）。改了这门课、练习数据或 `answers.sql`，发布前两个都要跑。
+
 ## 部署（GitHub Pages）
 发布前先在 `web/` 里运行 `node tools/asset-version.mjs bump`：它会给所有脚本、样式和课程文件的地址加上同一个新的 `?v=` 版本号，避免浏览器把新旧文件混在一起用。以下情况 `node --test` 会报错：
 - 漏了某个地址的版本号；
@@ -45,4 +47,5 @@ node --test
 - `js/logic.js` 分组与日期逻辑；`js/storage.js` 存储；`js/i18n.js` 多语言；`js/speech.js` 语音；`js/app.js` 界面
 - `js/learn-logic.js` 学习闭环纯逻辑；`js/learn-store.js` 学习进度存储（独立键 `hourlog.learning`）；`js/learn.js` 学习界面
 - `courses/` 课程包（格式见 `courses/README.md`）
+- `practice/mysql-accounting/` 「会计人的 MySQL」练习账套（建库脚本、参考答案、说明）；`tools/build-practice-data.mjs` 生成它，`tools/check-course-sql.mjs` 和 `tools/course-sql-expect.json` 用来核对课程里的 SQL
 - `tests/` Node 测试

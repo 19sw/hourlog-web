@@ -5,6 +5,11 @@ import { validatePack } from '../js/learn-logic.js';
 import demo from '../courses/video-editing-basics.js';
 import examPack from '../courses/micro-econ-final.js';
 import rolePack from '../courses/short-video-editor.js';
+import mysqlPack from '../courses/mysql-for-accounting.js';
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { parseResult } from '../js/learn-logic.js';
 import { resolvePack } from '../js/learn-logic.js';
 
 test('every registered pack loads and validates', async () => {
@@ -155,7 +160,7 @@ test('Release B packs: every question has exactly one correct option and an expl
 
 test('answer positions are balanced: no option position holds > 40% of correct answers in any set of 8+', () => {
   const sets = [];
-  for (const p of [demo, examPack, rolePack]) {
+  for (const p of [demo, examPack, rolePack, mysqlPack]) {
     sets.push([`${p.id} assessment`, p.assessment.questions]);
     sets.push([`${p.id} lesson quizzes`, p.nodes.filter((n) => !('ref' in n)).flatMap((n) => n.lesson.quiz)]);
     if (p.exam) sets.push([`${p.id} mock`, p.exam.mock.questions]);
@@ -176,5 +181,95 @@ test('answer positions are balanced: no option position holds > 40% of correct a
   for (let pos = 0; pos < 4; pos++) {
     const score = examPack.exam.mock.questions.filter((q) => q.answer === pos).length;
     assert.ok(score / examPack.exam.mock.questions.length < 0.6, `always option ${pos} scores ${score}/15`);
+  }
+});
+
+// ---------------------------------------------------------------- 会计人的 MySQL
+const WEB = new URL('..', import.meta.url);
+const codeItems = (p) => p.nodes.flatMap((n) => n.lesson.sections.flatMap((s) => s.body.filter((b) => typeof b !== 'string').map((b) => ({ node: n.id, ...b }))));
+
+test('mysql pack: 会计人的 MySQL meets the approved outline', () => {
+  const p = mysqlPack;
+  assert.deepEqual(validatePack(p), { ok: true, errors: [] });
+  assert.equal(p.id, 'mysql-for-accounting');
+  assert.equal(p.type, 'topic');
+  assert.equal(p.title, '会计人的 MySQL');
+  assert.deepEqual(p.levels.map((l) => l.label), ['看得懂', '能自己写简单查询', '能指挥 AI 并把关']);
+  assert.deepEqual(p.dimensions.map((d) => d.label), ['概念理解', '读懂 SQL', '会计应用', 'AI 协作']);
+  assert.deepEqual(p.stages.map((s) => s.title), ['认识数据库', '查询基础', '会计场景', '和 AI 协作']);
+  assert.deepEqual(p.nodes.map((n) => n.id), ['db-basics', 'acct-tables', 'setup', 'select-basics', 'aggregate', 'dates', 'joins',
+    'vouchers-gl', 'ar-ap', 'expenses', 'statements', 'read-complex', 'prompt-ai', 'check-ai', 'safety']);
+  assert.deepEqual(p.stages.map((s) => p.nodes.filter((n) => n.stage === s.id).length), [3, 4, 4, 4]);
+  const aq = p.assessment.questions.length;
+  assert.ok(aq >= 9 && aq <= 11, 'about 10 assessment questions');
+  for (const d of p.dimensions) assert.ok(p.assessment.questions.some((q) => q.dimension === d.id), `dimension ${d.id} is assessed`);
+  for (const lv of [1, 2, 3]) assert.ok(p.nodes.some((n) => n.level === lv), `level ${lv} present`);
+  // an experienced learner can skip the early query nodes; setup must always be done by hand
+  for (const id of ['db-basics', 'acct-tables', 'select-basics', 'aggregate', 'dates', 'joins']) assert.ok(p.assessment.questions.some((q) => q.node === id), `${id} can be skipped by the assessment`);
+  assert.ok(!p.assessment.questions.some((q) => q.node === 'setup'));
+  for (const n of p.nodes) {
+    const L = n.lesson;
+    assert.ok(L.sections.length >= 2, `${n.id}: several explanation sections`);
+    assert.ok(L.askQuestions.length >= 2, `${n.id}: questions worth asking`);
+    assert.ok(L.task.criteria.length >= 2, `${n.id}: acceptance criteria`);
+    assert.ok(L.reflection.answer.length >= 40, `${n.id}: genuine reference answer`);
+    assert.ok(L.quiz.length >= 2 && L.quiz.length <= 3, `${n.id}: quiz has 2-3 questions`);
+  }
+});
+
+test('mysql pack: questions are well formed; code-reading questions are common; no markup or URLs', () => {
+  const qs = [...mysqlPack.nodes.flatMap((n) => n.lesson.quiz), ...mysqlPack.assessment.questions];
+  const ids = new Set();
+  for (const q of qs) {
+    assert.ok(!ids.has(q.id), `unique id ${q.id}`); ids.add(q.id);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, `${q.id}: one correct option`);
+    assert.equal(new Set(q.options).size, q.options.length, `${q.id}: distinct options`);
+    assert.ok(q.explanation.trim().length >= 15, `${q.id}: explanation`);
+  }
+  assert.ok(qs.filter((q) => q.code).length >= 15, 'at least 15 questions show SQL to read');
+  const text = JSON.stringify(mysqlPack);
+  assert.ok(!/<[a-z/!]/i.test(text), 'no HTML tags');
+  assert.ok(!/https?:\/\//i.test(text), 'no URLs');
+});
+
+test('mysql pack: code blocks are well formed and their recorded results are complete', () => {
+  const items = codeItems(mysqlPack);
+  assert.ok(items.length >= 50, 'lessons show plenty of SQL');
+  for (const it of items) {
+    assert.ok(!it.code.includes('\\') && !it.code.includes('${'), `${it.node}: code is a plain literal (the checker rewrites results by matching it)`);
+    if (it.result !== undefined) assert.ok(parseResult(it.result), `${it.node}: result parses`);
+  }
+  // every SQL block except DDL/DCL statements shows its result
+  for (const it of items.filter((x) => x.lang !== 'shell' && x.result === undefined)) {
+    assert.match(it.code, /^(CREATE USER|SHOW CREATE TABLE)/, `${it.node}: SQL block without a result: ${it.code.slice(0, 40)}`);
+  }
+  // the checker's recorded results cover exactly the questions that show code
+  const expect = JSON.parse(fs.readFileSync(new URL('tools/course-sql-expect.json', WEB), 'utf8'));
+  const withCode = [...mysqlPack.nodes.flatMap((n) => n.lesson.quiz), ...mysqlPack.assessment.questions].filter((q) => q.code).map((q) => q.id).sort();
+  assert.deepEqual(Object.keys(expect).sort(), withCode);
+});
+
+test('mysql practice data: files exist and schema-and-data.sql is exactly what the generator produces', () => {
+  const dir = new URL('practice/mysql-accounting/', WEB);
+  for (const f of ['schema-and-data.sql', 'answers.sql', 'README.md']) assert.ok(fs.existsSync(new URL(f, dir)), f);
+  const sql = fs.readFileSync(new URL('schema-and-data.sql', dir), 'utf8');
+  assert.match(sql, /^DROP DATABASE IF EXISTS acct_practice;$/m, 'idempotent re-import');
+  assert.ok(!/\b(RAND|NOW|CURDATE|UUID|SYSDATE)\s*\(/i.test(sql), 'deterministic import');
+  const fresh = execFileSync(process.execPath, [fileURLToPath(new URL('tools/build-practice-data.mjs', WEB)), '--stdout'], { encoding: 'utf8' });
+  assert.equal(fresh, sql);
+});
+
+test('mysql pack: option length gives the answer away in at most 40% of questions (assessment first)', () => {
+  // Applies to this pack only: the published packs' assessment questions are frozen.
+  const uniqueExtreme = (q, pick) => {
+    const len = q.options.map((o) => [...o].length);
+    const m = pick(...len);
+    return len[q.answer] === m && len.filter((x) => x === m).length === 1;
+  };
+  for (const [name, qs] of [['assessment', mysqlPack.assessment.questions], ['all questions', [...mysqlPack.assessment.questions, ...mysqlPack.nodes.flatMap((n) => n.lesson.quiz)]]]) {
+    const longest = qs.filter((q) => uniqueExtreme(q, Math.max)).map((q) => q.id);
+    const shortest = qs.filter((q) => uniqueExtreme(q, Math.min)).map((q) => q.id);
+    assert.ok(longest.length / qs.length <= 0.4, `${name}: correct option is the unique longest in ${longest.length}/${qs.length}: ${longest.join(' ')}`);
+    assert.ok(shortest.length / qs.length <= 0.4, `${name}: correct option is the unique shortest in ${shortest.length}/${qs.length}: ${shortest.join(' ')}`);
   }
 });
